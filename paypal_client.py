@@ -53,3 +53,56 @@ async def create_invoice(client_email: str, description: str, amount: str,
         if s.status_code >= 400:
             raise HTTPException(status_code=s.status_code, detail=s.text)
         return {"invoice_id": invoice_id, "status": "sent", "due_date": due}
+
+async def list_invoices():
+    token = await get_token()
+    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+    async with httpx.AsyncClient() as client:
+        r = await client.get(
+            f"{BASE}/v2/invoicing/invoices",
+            params={"page": 1, "page_size": 20, "total_required": "true"},
+            headers=headers,
+        )
+        if r.status_code >= 400:
+            raise HTTPException(status_code=r.status_code, detail=r.text)
+        data = r.json()
+
+    today = date.today().isoformat()
+    result = []
+    for inv in data.get("items", []):
+        status = inv.get("status")
+        due = inv.get("detail", {}).get("payment_term", {}).get("due_date")
+        overdue = status in ("SENT", "UNPAID", "PARTIALLY_PAID") and due and due < today
+        result.append({
+            "id": inv.get("id"),
+            "status": "OVERDUE" if overdue else status,
+            "due_date": due,
+            "amount": inv.get("amount", {}).get("value"),
+            "currency": inv.get("amount", {}).get("currency_code"),
+        })
+    return result
+
+async def get_invoice(invoice_id: str):
+    token = await get_token()
+    headers = {"Authorization": f"Bearer {token}", "Accept": "application/json"}
+    async with httpx.AsyncClient() as client:
+        r = await client.get(f"{BASE}/v2/invoicing/invoices/{invoice_id}", headers=headers)
+        if r.status_code >= 400:
+            raise HTTPException(status_code=r.status_code, detail=r.text)
+        return r.json()
+
+async def send_reminder(invoice_id: str, subject: str, note: str):
+    token = await get_token()
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+    }
+    body = {"subject": subject, "note": note, "send_to_invoicer": False}
+    async with httpx.AsyncClient() as client:
+        r = await client.post(f"{BASE}/v2/invoicing/invoices/{invoice_id}/remind",
+                              json=body, headers=headers)
+        if r.status_code >= 400:
+            raise HTTPException(status_code=r.status_code, detail=r.text)
+        return {"invoice_id": invoice_id, "status": "reminder_sent"}
+    
