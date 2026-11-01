@@ -13,6 +13,9 @@ from paypal_client import (
     send_reminder,
 )
 from agent import parse_invoice_request, draft_reminder
+from fees import estimate_inr
+from insights import build_insights
+from fastapi.responses import FileResponse
 
 load_dotenv()
 app = FastAPI()
@@ -76,3 +79,41 @@ async def reminder_draft(invoice_id: str, tone: str = "friendly"):
 @app.post("/send-reminder")
 async def send_reminder_route(req: ReminderSend):
     return await send_reminder(req.invoice_id, req.subject, req.note)
+
+@app.get("/estimate")
+async def estimate(amount: float, currency: str = "USD"):
+    try:
+        return await estimate_inr(amount, currency.upper())
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"{type(e).__name__}: {e}")
+
+@app.post("/preview")
+async def preview(req: TextRequest):
+    parsed = await parse_invoice_request(req.message)
+    est = await estimate_inr(float(parsed.amount), parsed.currency)
+    return {"parsed": parsed, "estimate": est}
+
+@app.get("/insights")
+async def insights():
+    return build_insights(await list_invoices())
+
+class ConfirmRequest(BaseModel):
+    description: str
+    amount: str
+    currency: str = "USD"
+    due_days: int = 7
+    client_email: str | None = None
+
+@app.get("/app")
+def dashboard_page():
+    return FileResponse(os.path.join(os.path.dirname(__file__), "index.html"))
+
+@app.get("/dashboard")
+async def dashboard():
+    invs = await list_invoices()
+    return {"invoices": invs, "insights": build_insights(invs)}
+
+@app.post("/confirm-invoice")
+async def confirm_invoice(req: ConfirmRequest):
+    email = req.client_email or os.getenv("PAYPAL_PERSONAL_EMAIL")
+    return await create_invoice(email, req.description, req.amount, req.currency, req.due_days)
