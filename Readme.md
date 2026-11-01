@@ -1,5 +1,3 @@
-1. uvicorn main:app --reload
-
 # TakeHome
 
 **Describe a job in one sentence. TakeHome invoices your client through PayPal and shows what you'll actually receive in rupees.**
@@ -160,4 +158,4 @@ Open **http://127.0.0.1:8000/app**.
 
 ## Author
 
-Palak Goda · KSD's Model College · _LinkedIn or GitHub link_
+Palak Goda · KSD's Model College · https://youtu.be/Uh3NkCnLXxQ
