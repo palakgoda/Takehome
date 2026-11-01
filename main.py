@@ -1,24 +1,33 @@
 import os
+import secrets
 from datetime import date
 
+import httpx
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, Request
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from pydantic import BaseModel
 
-from paypal_client import (
-    get_token,
-    create_invoice,
-    list_invoices,
-    get_invoice,
-    send_reminder,
-)
+from paypal_client import get_token, create_invoice, list_invoices, get_invoice, send_reminder
 from agent import parse_invoice_request, draft_reminder
 from fees import estimate_inr
 from insights import build_insights
-from fastapi.responses import FileResponse
 
 load_dotenv()
-app = FastAPI()
+
+
+def guard(request: Request,
+          creds: HTTPBasicCredentials = Depends(HTTPBasic(auto_error=False))):
+    pw = os.getenv("DEMO_PASSWORD")
+    if not pw or request.url.path == "/":
+        return          # no password set (local dev), or the "/" health check
+    if not creds or not secrets.compare_digest(creds.password.encode(), pw.encode()):
+        raise HTTPException(401, "Password required", headers={"WWW-Authenticate": "Basic"})
+
+
+app = FastAPI(dependencies=[Depends(guard)])
+
 
 class TextRequest(BaseModel):
     message: str
@@ -117,12 +126,3 @@ async def dashboard():
 async def confirm_invoice(req: ConfirmRequest):
     email = req.client_email or os.getenv("PAYPAL_PERSONAL_EMAIL")
     return await create_invoice(email, req.description, req.amount, req.currency, req.due_days)
-def guard(request: Request,
-          creds: HTTPBasicCredentials = Depends(HTTPBasic(auto_error=False))):
-    pw = os.getenv("DEMO_PASSWORD")
-    if not pw or request.url.path == "/":
-        return          # no password set (local dev), or the "/" health check
-    if not creds or not secrets.compare_digest(creds.password.encode(), pw.encode()):
-        raise HTTPException(401, "Password required", headers={"WWW-Authenticate": "Basic"})
-
-app = FastAPI(dependencies=[Depends(guard)])
