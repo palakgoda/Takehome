@@ -2,9 +2,12 @@
 
 **Describe a job in one sentence. TakeHome invoices your client through PayPal and shows what you'll actually receive in rupees.**
 
-Built for the PayPal AI Hackathon.
+Built for the PayPal AI Hackathon with the PayPal Developer Platform (Invoicing API, sandbox) and AI (Google Gemini).
 
-> Demo video: _add link_ · Screenshots: _add images to `/docs` and link them here_
+Live demo: https://takehome-ycf0.onrender.com/app
+Demo login: username judge (any username works), password takehome2026
+Demo video: https://www.youtube.com/watch?v=Uh3NkCnLXxQ
+License: MIT
 
 ---
 
