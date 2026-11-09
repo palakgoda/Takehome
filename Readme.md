@@ -4,10 +4,10 @@
 
 Built for the PayPal AI Hackathon with the PayPal Developer Platform (Invoicing API, sandbox) and AI (Google Gemini).
 
-Live demo: https://takehome-ycf0.onrender.com/app
-Demo login: username judge (any username works), password takehome2026
-Demo video: https://www.youtube.com/watch?v=Uh3NkCnLXxQ
-License: MIT
+>Live demo: https://takehome-ycf0.onrender.com/app
+>Demo login: username judge (any username works), password takehome2026
+>Demo video: https://www.youtube.com/watch?v=Uh3NkCnLXxQ
+>License: MIT
 
 ---
 
